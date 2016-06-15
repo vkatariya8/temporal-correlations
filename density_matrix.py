@@ -1,4 +1,5 @@
 import numpy as np
+from matplotlib import pyplot as plt
 from pauli_matrices import pauli
 from pauli_matrices import pauli_projectors as projectors
 default_rho = np.asarray([[1,0], [0,0]])
@@ -13,85 +14,43 @@ def apply_remove_corr(rho):
 	np.fill_diagonal(new_rho, rho.diagonal())
 	return new_rho
 
-def apply_decoherence(rho, epsilon = 0):
+def apply_decoherence(rho, epsilon = 0.2):
 	rho_diag = apply_remove_corr(rho)
 	new_rho = (1 - epsilon) * rho
 	new_rho = new_rho + epsilon * rho_diag
 	return new_rho
 
-def compute_expectations(rho, i, k):
+def compute_expectations(rho, i, k, epsilon):
 	rho_original = rho;
-	counter = 1
 	expectation = 0
-	if i != 3 and k != 3:
-		#print 'Here we start'
-		operator = pauli[i]
-		for j in range(2):
-			rho = rho_original
-			projector = projectors[i,j]
-			probability = np.trace(np.dot(rho, projector))
-			if probability.real == 0:
-				continue
-			rho = np.dot(rho, projector)
-			rho = np.dot(projector, rho)
-			rho = rho/float(probability)
-			eigenvalue = (-1)**j
-			rho = apply_decoherence(rho)
-			#rho = apply_remove_corr(rho)
-			#Add unitary evolution here
-			operator2 = pauli[k]
-			rho_original_second = rho
-			for j2 in range(2):
-				rho = rho_original_second
-				projector2 = projectors[k,j2]
-				probability2 = np.trace(np.dot(rho,projector2))
-				if probability2 == 0:
-					continue
-				else:
-					rho = np.dot(rho, projector2)
-					rho = np.dot(projector2, rho)
-					rho = rho/float(probability2)
-				eigenvalue2 = (-1)**j2
-				expectation = expectation + probability.real*probability2.real*eigenvalue*eigenvalue2
-				print j2
-				counter = counter + 1
-	elif i == 3 and k != 3:
-		eigenvalue = 1
-		probability = 1
-		rho = apply_decoherence(rho)
-		#rho = apply_remove_corr(rho)
-		#Second measurement starts here
+	operator = pauli[i]
+	for j in range(2):
+		rho = rho_original
+		projector = projectors[i,j]
+		probability = np.trace(np.dot(rho, projector))
+		if probability.real == 0:
+			continue
+		rho = np.dot(rho, projector)
+		rho = np.dot(projector, rho)
+		rho = rho/float(probability)
+		eigenvalue = (-1)**j
+		if i == 3:
+			eigenvalue = 1
+		rho = apply_decoherence(rho, epsilon)
 		operator2 = pauli[k]
+		rho_original_second = rho
 		for j2 in range(2):
-			rho = rho_original
+			rho = rho_original_second
 			projector2 = projectors[k,j2]
 			probability2 = np.trace(np.dot(rho,projector2))
 			if probability2 == 0:
 				continue
-			rho = np.dot(rho, projector2)
-			rho = np.dot(projector2, rho)
-			rho = rho/float(probability2)
+			else:
+				rho = np.dot(rho, projector2)
+				rho = np.dot(projector2, rho)
+				rho = rho/float(probability2)
 			eigenvalue2 = (-1)**j2
-			expectation = expectation + probability*probability2*eigenvalue*eigenvalue2
-	elif k == 3 and i != 3:
-		operator = pauli[i]
-		for j in range(2):
-			rho = rho_original
-			projector = projectors[i,j]
-			probability = np.trace(rho * projector)
-			if probability == 0:
-				continue
-			rho = np.dot(rho, projector)
-			rho = np.dot(projector, rho)
-			rho = rho/float(probability)
-			eigenvalue = (-1)**j
-			#rho = apply_remove_corr(rho)
-			rho = apply_decoherence(rho)
-			eigenvalue2 = 1
-			probability2 = 1
-			expectation = expectation + probability*probability2*eigenvalue*eigenvalue2
-	else:
-		expectation = 1
+			expectation = expectation + probability.real*probability2.real*eigenvalue*eigenvalue2
 	return expectation
 
 def define_density_operator(a = 1,b = 0,c = 0,d = 0):
@@ -104,11 +63,11 @@ def define_density_operator(a = 1,b = 0,c = 0,d = 0):
 	rho = np.asarray([[a,b], [c,d]])
 	return rho
 
-def compute_pdm(rho, channel_unitary = np.asarray([[1,0],[0,1]])):
+def compute_pdm(rho, epsilon):
 	pdm = np.zeros([4,4])
 	for i in range(4):
 		for jj in range(4):
-			expectation = compute_expectations(rho, i, jj)
+			expectation = compute_expectations(rho, i, jj, epsilon)
 			#print expectation
 			basis_matrix = np.kron(pauli[i],pauli[jj])
 			temp = expectation * basis_matrix
@@ -116,3 +75,38 @@ def compute_pdm(rho, channel_unitary = np.asarray([[1,0],[0,1]])):
 	#Normalising the pdm
 	pdm = pdm/np.trace(pdm)
 	return pdm
+
+def pdm_analysis(pdm):
+	eigen_values = np.linalg.eigvals(pdm)
+	smallest = min(eigen_values)
+	abs_values = abs(eigen_values)
+	smallest_mod = min(abs_values)
+	return (smallest, smallest_mod)
+
+def iterate_over_epsilon(rho):
+	lower_epsilon = 0
+	upper_epsilon = 1
+	step_size = 0.01
+	iterations = (upper_epsilon - lower_epsilon)/step_size
+	iterations = int(iterations)
+	small_list = list()
+	abs_small_list = list()
+	eigvalues = np.zeros([4, iterations])
+	for i in range(iterations):
+		epsilon = lower_epsilon + i*upper_epsilon*step_size
+		pdm = compute_pdm(rho, epsilon)
+		#(small, smallmod) = pdm_analysis(pdm)
+		#print small
+		#small_list.append(small)
+		eigvals = np.linalg.eigvals(pdm)
+		for j in range(4):
+			temp = eigvals[j]
+			eigvalues[j][i] = temp
+	return eigvalues
+
+def plot_eigvalues(eigvalues):
+	for i in range(len(eigvalues)):
+		plt.plot(eigvalues[i])
+	plt.show()
+
+
