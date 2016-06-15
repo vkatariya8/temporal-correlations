@@ -18,7 +18,10 @@ yp2 = 0.5*np.asarray([[1, 1j], [-1j, 1]])
 zp1 = np.asarray([[1, 0], [0, 0]])
 zp2 = np.asarray([[0, 0], [0, 1]])
 
-pauli_projectors = np.zeros([3,2,2,2])
+ip1 = np.identity(2)
+ip2 = np.zeros([2,2])
+
+pauli_projectors = np.zeros([4,2,2,2])
 pauli_projectors = pauli_projectors + 0j
 pauli_projectors[0,0] = xp1
 pauli_projectors[0,1] = xp2
@@ -26,4 +29,6 @@ pauli_projectors[1,0] = yp1
 pauli_projectors[1,1] = yp2
 pauli_projectors[2,0] = zp1
 pauli_projectors[2,1] = zp2
+pauli_projectors[3,0] = ip1
+pauli_projectors[3,1] = ip2
 
