@@ -20,36 +20,29 @@ def apply_decoherence(rho, epsilon = 0.2):
 	new_rho = new_rho + epsilon * rho_diag
 	return new_rho
 
+def perform_measurement(rho, i, j):
+	projector = projectors[i,j]
+	probability = np.trace(np.dot(rho, projector))
+	if probability.real == 0:
+		return (0,1,rho)
+	rho = np.dot(projector, np.dot(rho, projector))
+	rho = rho/float(probability)
+	eigenvalue = (-1)**j
+	if i == 3:
+		eigenvalue = 1
+	return (probability, eigenvalue, rho)
+
 def compute_expectations(rho, i, k, epsilon):
 	rho_original = rho;
 	expectation = 0
-	operator = pauli[i]
 	for j in range(2):
 		rho = rho_original
-		projector = projectors[i,j]
-		probability = np.trace(np.dot(rho, projector))
-		if probability.real == 0:
-			continue
-		rho = np.dot(rho, projector)
-		rho = np.dot(projector, rho)
-		rho = rho/float(probability)
-		eigenvalue = (-1)**j
-		if i == 3:
-			eigenvalue = 1
+		(probability, eigenvalue, rho) = perform_measurement(rho, i, j)
 		rho = apply_decoherence(rho, epsilon)
-		operator2 = pauli[k]
 		rho_original_second = rho
 		for j2 in range(2):
 			rho = rho_original_second
-			projector2 = projectors[k,j2]
-			probability2 = np.trace(np.dot(rho,projector2))
-			if probability2 == 0:
-				continue
-			else:
-				rho = np.dot(rho, projector2)
-				rho = np.dot(projector2, rho)
-				rho = rho/float(probability2)
-			eigenvalue2 = (-1)**j2
+			(probability2, eigenvalue2, rho) = perform_measurement(rho, k, j2)
 			expectation = expectation + probability.real*probability2.real*eigenvalue*eigenvalue2
 	return expectation
 
