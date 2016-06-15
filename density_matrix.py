@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from matplotlib import pyplot as plt
 from pauli_matrices import pauli
 from pauli_matrices import pauli_projectors as projectors
@@ -8,6 +9,39 @@ default_rho = np.asarray([[1,0], [0,0]])
 
 # The code is messy, I aim to clean it up soon.
 
+
+def operator_sum_apply(rho, operators):
+	newrho = np.zeros(rho.shape)
+	for i in range(len(operators)):
+		temprho = np.dot(operators[i], np.dot(rho, np.asmatrix(operators[i]).H))
+		newrho = newrho + temprho
+	return newrho
+
+
+def apply_channel(rho, option = 1, param1 = 0, param2 = 0):
+	'''
+	Options 1: decoherence channel, 2: dephasing, 3: depolarising
+	1: param1 = epsilon, param2 unused
+	'''
+	if option == 1:
+		rho = apply_decoherence(rho, param1)
+	elif option == 2:
+		rho = apply_dephasing(rho, param1)
+	elif option == 3:
+		rho = apply_depolarising(rho, param1)
+	return rho
+
+def apply_depolarising(rho, p):
+	rho = p * np.identity(2) / 2 + (1 - p) * rho
+	return rho
+
+
+def apply_dephasing(rho, param):
+	operators = np.zeros([2,2,2])
+	operators[0] = np.asarray([[1,0],[0,math.sqrt(1 - param)]])
+	operators[1] = np.asarray([[0,0],[0,math.sqrt(param)]])
+	rho = operator_sum_apply(rho, operators)
+	return rho
 
 def apply_remove_corr(rho):
 	new_rho = np.zeros(rho.shape)
@@ -38,7 +72,7 @@ def compute_expectations(rho, i, k, epsilon):
 	for j in range(2):
 		rho = rho_original
 		(probability, eigenvalue, rho) = perform_measurement(rho, i, j)
-		rho = apply_decoherence(rho, epsilon)
+		rho = apply_channel(rho, 2, epsilon)
 		rho_original_second = rho
 		for j2 in range(2):
 			rho = rho_original_second
@@ -61,7 +95,6 @@ def compute_pdm(rho, epsilon):
 	for i in range(4):
 		for jj in range(4):
 			expectation = compute_expectations(rho, i, jj, epsilon)
-			#print expectation
 			basis_matrix = np.kron(pauli[i],pauli[jj])
 			temp = expectation * basis_matrix
 			pdm = pdm + temp
