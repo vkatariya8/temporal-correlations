@@ -36,7 +36,10 @@ def apply_depolarising(rho, p):
 	return rho
 
 
-def apply_dephasing(rho, param):
+def apply_dephasing(rho, time):
+	chi = 0.01
+	param = math.sqrt(1 - (np.cos(chi * time))**2)
+	print param
 	operators = np.zeros([2,2,2])
 	operators[0] = np.asarray([[1,0],[0,math.sqrt(1 - param)]])
 	operators[1] = np.asarray([[0,0],[0,math.sqrt(param)]])
@@ -49,9 +52,9 @@ def apply_remove_corr(rho):
 	return new_rho
 
 def apply_decoherence(rho, epsilon = 0.2):
-	rho_diag = apply_remove_corr(rho)
+	#rho_diag = apply_remove_corr(rho)
 	new_rho = (1 - epsilon) * rho
-	new_rho = new_rho + epsilon * rho_diag
+	new_rho = new_rho + epsilon * np.identity(2) * 0.5
 	return new_rho
 
 def perform_measurement(rho, i, j):
@@ -72,7 +75,7 @@ def compute_expectations(rho, i, k, epsilon):
 	for j in range(2):
 		rho = rho_original
 		(probability, eigenvalue, rho) = perform_measurement(rho, i, j)
-		rho = apply_channel(rho, 2, epsilon)
+		rho = apply_channel(rho, 3, epsilon)
 		rho_original_second = rho
 		for j2 in range(2):
 			rho = rho_original_second
@@ -118,17 +121,18 @@ def iterate_over_epsilon(rho):
 	small_list = list()
 	abs_small_list = list()
 	eigvalues = np.zeros([4, iterations])
+	trace_norms = np.zeros(iterations)
 	for i in range(iterations):
 		epsilon = lower_epsilon + i*upper_epsilon*step_size
 		pdm = compute_pdm(rho, epsilon)
-		#(small, smallmod) = pdm_analysis(pdm)
-		#print small
-		#small_list.append(small)
 		eigvals = np.linalg.eigvals(pdm)
 		for j in range(4):
 			temp = eigvals[j]
 			eigvalues[j][i] = temp
-	return eigvalues
+			eigvals = np.abs(eigvals)
+			trace_norm = sum(eigvals)
+			trace_norms[i] = trace_norm
+	return (eigvalues, trace_norms)
 
 def plot_eigvalues(eigvalues):
 	for i in range(len(eigvalues)):
