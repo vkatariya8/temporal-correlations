@@ -75,7 +75,7 @@ def compute_expectations(rho, i, k, epsilon):
 	for j in range(2):
 		rho = rho_original
 		(probability, eigenvalue, rho) = perform_measurement(rho, i, j)
-		rho = apply_channel(rho, 3, epsilon)
+		rho = apply_channel(rho, 1, epsilon)
 		rho_original_second = rho
 		for j2 in range(2):
 			rho = rho_original_second
@@ -98,6 +98,8 @@ def compute_pdm(rho, epsilon):
 	for i in range(4):
 		for jj in range(4):
 			expectation = compute_expectations(rho, i, jj, epsilon)
+			if expectation != 0:
+				print i, jj
 			basis_matrix = np.kron(pauli[i],pauli[jj])
 			temp = expectation * basis_matrix
 			pdm = pdm + temp
