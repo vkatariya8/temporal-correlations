@@ -90,7 +90,7 @@ def iterate_epsilon():
 	for i in range(iterations):
 		epsilon = lower_epsilon + step_size * i
 		p = compute_pdm(epsilon)
-		eigvals = np.linalg.eigvals(p)
+		eigvals = np.linalg.eigvalsh(p)
 		trace_norm = sum(np.abs(eigvals))
 		trace_norms[i] = trace_norm
 		for j in range(8):
