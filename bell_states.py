@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from pauli_matrices import pauli
 from density_matrix import apply_decoherence, perform_measurement, plot_eigvalues
 
-correlations = [1,-1,1]
+correlations = [-1,-1,-1]
 
 def compute_rho_from_eigenstate(i, ii):
 	if i == 0:

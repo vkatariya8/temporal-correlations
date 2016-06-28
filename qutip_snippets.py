@@ -1,7 +1,7 @@
 from qutip import *
 
-rho = tensor(fock_dm(2,0), fock_dm(2, 0), fock_dm(2,0))
-sa = scipy.sparse.csr_matrix(a, dtype = np.complex128)
+rho = tensor(fock_dm(2,0), fock_dm(2, 0), fock_dm(2,0), fock_dm(2,0))
+sa = scipy.sparse.csr_matrix(p, dtype = np.complex128)
 rho.data = sa
 
 
